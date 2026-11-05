@@ -4,7 +4,7 @@ import base64
 import json
 
 from config import Settings
-from models import ComparisonModelAnalysis, ModelAnalysis, MuscleRegion
+from models import IdentificationModelResult, MuscleRegion
 
 
 class MetaVisionError(RuntimeError):
@@ -12,7 +12,7 @@ class MetaVisionError(RuntimeError):
 
 
 class MetaVisionAdapter:
-    """One image and all regions in exactly one non-retried model request."""
+    """One front/back identification request using Meta's Responses API."""
 
     def __init__(self, settings: Settings, client: object | None = None) -> None:
         self.settings = settings
@@ -31,102 +31,67 @@ class MetaVisionAdapter:
     def preflight(self) -> None:
         self.settings.validate_meta()
 
-    def analyze(
-        self, image_jpeg: bytes, regions: list[MuscleRegion]
-    ) -> tuple[ModelAnalysis, dict]:
-        self.preflight()
-        names = [region.name for region in regions]
-        prompt = (
-            "Analyze this single upper-body BACK photo for visible muscle development. "
-            "Return one short, neutral visual observation for every supplied muscle name. "
-            "Discuss only visible contour, symmetry, separation, or definition; do not diagnose, "
-            "score, recommend exercises, or claim measured muscle mass. Mark visible=false when "
-            "a region is obscured. The allowed muscle names are: "
-            + ", ".join(names)
-            + '. Return JSON exactly as {"view":"back|front|uncertain","observations":'
-              '[{"muscle_name":"...","observation":"...","visible":true}]}. '
-              "Include every allowed name exactly once and no other names."
-        )
-        image = base64.b64encode(image_jpeg).decode("ascii")
-        try:
-            response = self._client.responses.create(
-                model=self.model_name,
-                input=[{
-                    "type": "message",
-                    "role": "user",
-                    "content": [
-                        {"type": "input_text", "text": prompt},
-                        {
-                            "type": "input_image",
-                            "image_url": f"data:image/jpeg;base64,{image}",
-                        },
-                    ],
-                }],
-                text={
-                    "format": {
-                        "type": "json_schema",
-                        "name": "muscle_analysis",
-                        "schema": ModelAnalysis.model_json_schema(),
-                        "strict": True,
-                    }
-                },
-            )
-            parsed = ModelAnalysis.model_validate(json.loads(response.output_text))
-            raw = response.model_dump(mode="json")
-        except Exception as exc:
-            raise MetaVisionError("The Meta vision request failed; it was not retried.") from exc
-        returned = [item.muscle_name for item in parsed.observations]
-        if len(returned) != len(names) or set(returned) != set(names):
-            raise MetaVisionError("Meta returned an incomplete or unexpected muscle list.")
-        return parsed, raw
-
-    def compare(
+    def identify_pair(
         self,
-        baseline_jpeg: bytes,
-        current_jpeg: bytes,
-        regions: list[MuscleRegion],
-        compatibility_notes: list[str],
-    ) -> tuple[ComparisonModelAnalysis, dict]:
-        """Compare two ordered images in exactly one non-retried Responses call."""
+        front_jpeg: bytes,
+        back_jpeg: bytes,
+        front_regions: list[MuscleRegion],
+        back_regions: list[MuscleRegion],
+    ) -> tuple[IdentificationModelResult, dict]:
         self.preflight()
-        names = [region.name for region in regions]
-        notes = "; ".join(compatibility_notes) if compatibility_notes else "No major local pose differences detected."
+        front_names = [region.name for region in front_regions]
+        back_names = [region.name for region in back_regions]
         prompt = (
-            "Compare two upper-body progress photos. The FIRST image is the BASELINE and the "
-            "SECOND image is the CURRENT photo. Analyze only visible differences in contour, "
-            "fullness, width, and definition for these exact regions: " + ", ".join(names) + ". "
-            "For every region return status visible_progress, no_clear_change, or inconclusive. "
-            "Use inconclusive whenever pose, framing, lighting, occlusion, or visibility prevents "
-            "a reliable visual comparison. Do not infer muscle mass, strength, training effect, "
-            "or precise measurements. Local MediaPipe compatibility notes: " + notes
+            "Identify upper-body muscle anatomy in two ordered photos. The FIRST image is the "
+            "FRONT view and the SECOND image is the BACK view. For each candidate muscle, describe "
+            "only what the image supports. Classify location_quality as visible_surface when the "
+            "surface muscle is meaningfully visible, covered_surface when a surface muscle is hidden by "
+            "clothing but its broad anatomical region remains locatable, estimated_deep only when the "
+            "muscle itself is anatomically deeper, or not_meaningfully_locatable "
+            "when pose, clothing, crop, or image quality prevents a useful location. Anatomical left "
+            "and right always mean the SUBJECT'S left and right, never the viewer's. For each meaningfully "
+            "locatable surface muscle return: (1) grounding_box with x_min, y_min, x_max, y_max enclosing "
+            "its approximate visible extent on Meta's normalized 0-1000 grid; (2) grounding_point near its "
+            "visual centre as a fallback; and (3) boundary_points with 4 to 8 clockwise points sampling only "
+            "a visually supported perimeter. Boundary points are an experimental hint, not segmentation. "
+            "When a perimeter is not visually supported return an empty boundary_points list. For deeper or "
+            "covered anatomy return grounding_box null, boundary_points empty, and only a grounding_point "
+            "when an approximate location is meaningful. For not_meaningfully_locatable return all grounding "
+            "fields empty or null. Images may contain letterbox padding; place coordinates only on the "
+            "photographed body, never on the padding. For deeper muscles such as rhomboids, use estimated_deep and point to the "
+            "approximate anatomical location rather than claiming a visible surface outline. "
+            "Do not infer development, progress, strength, or training effects. FRONT candidates: "
+            + ", ".join(front_names) + ". BACK candidates: " + ", ".join(back_names)
+            + ". Include every candidate exactly once."
         )
-        baseline = base64.b64encode(baseline_jpeg).decode("ascii")
-        current = base64.b64encode(current_jpeg).decode("ascii")
+        front = base64.b64encode(front_jpeg).decode("ascii")
+        back = base64.b64encode(back_jpeg).decode("ascii")
         try:
             response = self._client.responses.create(
                 model=self.model_name,
                 input=[{
-                    "type": "message",
-                    "role": "user",
-                    "content": [
+                    "type": "message", "role": "user", "content": [
                         {"type": "input_text", "text": prompt},
-                        {"type": "input_image", "image_url": f"data:image/jpeg;base64,{baseline}"},
-                        {"type": "input_image", "image_url": f"data:image/jpeg;base64,{current}"},
+                        {"type": "input_image", "image_url": f"data:image/jpeg;base64,{front}"},
+                        {"type": "input_image", "image_url": f"data:image/jpeg;base64,{back}"},
                     ],
                 }],
                 text={"format": {
                     "type": "json_schema",
-                    "name": "muscle_progress_comparison",
-                    "schema": ComparisonModelAnalysis.model_json_schema(),
+                    "name": "upper_body_muscle_identification",
+                    "schema": IdentificationModelResult.model_json_schema(),
                     "strict": True,
                 }},
             )
-            parsed = ComparisonModelAnalysis.model_validate(json.loads(response.output_text))
+            parsed = IdentificationModelResult.model_validate(json.loads(response.output_text))
             raw = response.model_dump(mode="json")
         except Exception as exc:
-            raise MetaVisionError("The Meta comparison request failed; it was not retried.") from exc
-        returned = [item.muscle for item in parsed.muscle_progress]
-        if len(returned) != len(names) or set(returned) != set(names):
-            raise MetaVisionError("Meta returned an incomplete or unexpected comparison muscle list.")
+            raise MetaVisionError("The Meta identification request failed; it was not retried.") from exc
+        expected = set(front_names + back_names)
+        returned = [item.muscle_name for item in parsed.muscles]
+        if len(returned) != len(expected) or set(returned) != expected:
+            raise MetaVisionError("Meta returned an incomplete or unexpected muscle list.")
+        expected_view = {**{name: "front" for name in front_names}, **{name: "back" for name in back_names}}
+        if any(item.view != expected_view[item.muscle_name] for item in parsed.muscles):
+            raise MetaVisionError("Meta associated a muscle with the wrong photo view.")
         return parsed, raw
-

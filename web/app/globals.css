@@ -34,11 +34,29 @@ h1 { grid-column:2; font-size:clamp(58px,9vw,124px); line-height:.83; letter-spa
 .image-stage svg { position:absolute; inset:0; width:100%; height:100%; }
 .muscle-overlay { cursor:pointer; outline:none; }
 .muscle-overlay path { fill-opacity:.26; stroke-opacity:.9; stroke-width:1.5; vector-effect:non-scaling-stroke; transition:fill-opacity .16s, stroke-width .16s; }
+.muscle-overlay path.estimated-area { fill-opacity:.11; stroke-dasharray:6 5; stroke-width:2; }
 .muscle-overlay line { stroke:#f6f2e8; stroke-width:1.5; stroke-opacity:.88; vector-effect:non-scaling-stroke; filter:drop-shadow(0 1px 1px #111); }
 .muscle-overlay circle { stroke:#f6f2e8; stroke-width:1; vector-effect:non-scaling-stroke; }
 .muscle-overlay text { fill:#fff; stroke:#111; stroke-width:3px; paint-order:stroke fill; font:700 13px/1 Arial, sans-serif; letter-spacing:.01em; pointer-events:none; }
 .muscle-overlay:hover path, .muscle-overlay:focus path, .muscle-overlay.active path { fill-opacity:.48; stroke-width:2.75; }
 .muscle-overlay:hover text, .muscle-overlay:focus text, .muscle-overlay.active text { fill:var(--acid); }
+.diagnostic-layer-controls { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:14px 0; border-top:1px solid var(--ink); }
+.diagnostic-layer-controls > strong { margin-right:auto; font:700 11px/1 monospace; text-transform:uppercase; letter-spacing:.08em; }
+.diagnostic-layer-controls button { border:1px solid var(--line); background:transparent; padding:9px 11px; cursor:pointer; display:flex; gap:7px; align-items:center; font-size:12px; }
+.diagnostic-layer-controls button[aria-pressed="false"] { opacity:.38; text-decoration:line-through; }
+.diagnostic-layer-controls button span { width:11px; height:11px; border-radius:50%; }
+.template-toggle span { background:#2589d8; }
+.muse-toggle span { background:#25b56a; }
+.final-toggle span { background:#f47b38; }
+.diagnostic-muscle path.diagnostic-template { fill:#2589d81a; stroke:#2589d8; stroke-width:1.7; stroke-dasharray:5 3; }
+.diagnostic-muscle .diagnostic-muse rect { fill:#25b56a12; stroke:#25b56a; stroke-width:2; stroke-dasharray:7 4; vector-effect:non-scaling-stroke; }
+.diagnostic-muscle .diagnostic-muse polyline { fill:none; stroke:#25b56a; stroke-width:1.7; stroke-dasharray:3 3; vector-effect:non-scaling-stroke; }
+.diagnostic-muscle .diagnostic-muse circle { fill:#25b56a; stroke:#f5fff8; stroke-width:1; vector-effect:non-scaling-stroke; }
+.diagnostic-muscle .diagnostic-muse circle.grounding-centre { fill:#fff; stroke:#168b4d; stroke-width:2.5; }
+.diagnostic-muscle path.diagnostic-final { fill:#f47b3830; stroke:#f47b38; stroke-width:2.1; }
+.diagnostic-muscle path.diagnostic-final.estimated-area { fill:#f47b3812; stroke-dasharray:6 5; }
+.diagnostic-muscle path.diagnostic-final.covered-surface { fill:#f47b3818; stroke-dasharray:8 4; }
+.diagnostic-muscle .diagnostic-label-line { stroke:#f47b38; }
 .observations { border-left:1px solid var(--ink); }
 .observations button { width:100%; background:transparent; border:0; border-bottom:1px solid var(--line); text-align:left; display:grid; grid-template-columns:40px 1fr; gap:8px; padding:20px; cursor:pointer; }
 .observations button.selected { background:var(--acid); }
@@ -47,39 +65,43 @@ h1 { grid-column:2; font-size:clamp(58px,9vw,124px); line-height:.83; letter-spa
 .observations p { color:#50524b; line-height:1.45; margin:7px 0 0; }
 .notice { margin:30px 0; color:var(--muted); font-size:13px; border-left:3px solid var(--ink); padding-left:18px; }
 .secondary { display:inline-block; border:1px solid var(--ink); padding:14px 18px; text-decoration:none; font-weight:700; }
-.home-compare-link { margin-top:24px; }
-.compare-head { display:grid; grid-template-columns:1fr 2fr; gap:34px; padding:64px 0 44px; }
-.compare-head h1 { grid-column:2; }
-.compare-head > p:last-child { grid-column:2; max-width:580px; color:var(--muted); line-height:1.5; }
-.compare-upload-grid, .comparison-images { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
-.compare-picker .eyebrow { margin-bottom:12px; }
-.compare-dropzone { min-height:430px; }
 .photo-label { display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--ink); padding:12px 2px; text-transform:uppercase; font:700 11px/1 monospace; letter-spacing:.09em; }
 .photo-label span { color:var(--muted); }
-.comparison-stage { min-height:520px; }
-.comparison-summary { display:grid; grid-template-columns:1fr 2fr; gap:30px; align-items:end; padding:60px 0 42px; }
-.comparison-summary h1 { grid-column:2; font-size:clamp(54px,7vw,96px); }
-.comparison-summary > p:last-child { grid-column:2; color:var(--muted); line-height:1.55; max-width:680px; }
-.progress-report { margin-top:28px; border-top:1px solid var(--ink); }
-.progress-report button { width:100%; display:grid; grid-template-columns:48px 1fr auto; gap:16px; align-items:start; padding:20px 16px; border:0; border-bottom:1px solid var(--line); background:transparent; text-align:left; cursor:pointer; }
-.progress-report button.selected { background:#e3dfd3; box-shadow:inset 5px 0 0 var(--ink); }
-.report-index { font:700 11px monospace; }
-.progress-report strong { font-size:17px; }
-.progress-report p { margin:7px 0; color:var(--muted); line-height:1.45; }
-.progress-report small { color:#8a4b2b; }
-.status { padding:7px 10px; border:1px solid currentColor; border-radius:999px; font:700 10px monospace; text-transform:uppercase; white-space:nowrap; }
-.status-visible_progress { color:#36734a; }
-.status-no_clear_change { color:#5e625d; }
-.status-inconclusive { color:#9a572d; }
+.identification-intro { padding-bottom:44px; }
+.paired-upload-grid, .identification-images { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.anatomy-stage { min-height:520px; }
+.view-picker { min-width:0; }
+.picker-title { min-height:74px; display:grid; grid-template-columns:42px 1fr; gap:10px; border-top:1px solid var(--ink); padding:14px 0; }
+.picker-title > span { font:700 11px monospace; }
+.picker-title strong { font-size:16px; }
+.picker-title p { margin:6px 0 0; color:var(--muted); font-size:13px; }
+.paired-dropzone { min-height:430px; }
+.privacy-note { margin-top:20px; border-left:3px solid var(--ink); padding:10px 14px; color:var(--muted); font-size:13px; }
+.privacy-note strong { color:var(--ink); }
+.result-reset { margin:28px 0; background:transparent; cursor:pointer; }
+.identification-heading { display:grid; grid-template-columns:1fr 2fr; gap:28px; align-items:end; padding:34px 0 36px; }
+.identification-heading h2 { grid-column:2; margin:0; font-size:clamp(40px,6vw,78px); line-height:.92; letter-spacing:-.055em; }
+.identification-heading > p:last-child { grid-column:2; color:var(--muted); max-width:650px; line-height:1.5; }
+.muscle-directory { display:grid; grid-template-columns:repeat(5, 1fr); gap:1px; margin-top:24px; background:var(--line); border:1px solid var(--line); }
+.muscle-group-card { background:var(--paper); min-width:0; }
+.muscle-group-card h3 { margin:0; padding:15px; display:flex; gap:9px; align-items:center; font:700 12px monospace; text-transform:uppercase; }
+.muscle-group-card h3 span { width:11px; height:11px; border-radius:50%; border:1px solid #1115; }
+.muscle-group-card button { width:100%; display:block; text-align:left; background:transparent; border:0; border-top:1px solid var(--line); padding:13px 15px; cursor:pointer; }
+.muscle-group-card button.selected { background:var(--acid); }
+.muscle-group-card strong { display:block; font-size:13px; line-height:1.25; }
+.muscle-group-card small { display:block; margin-top:6px; color:var(--muted); font-size:10px; line-height:1.3; }
+.selected-muscle-detail { margin-top:24px; border:1px solid var(--ink); padding:24px; display:grid; grid-template-columns:1fr 2fr; gap:10px 24px; }
+.selected-muscle-detail h3 { grid-column:2; margin:0; font-size:30px; }
+.selected-muscle-detail > p:not(.eyebrow) { grid-column:2; margin:0; color:var(--muted); line-height:1.5; }
+.selected-muscle-detail > span { grid-column:2; font:700 10px monospace; text-transform:uppercase; }
 @media (max-width:800px) {
-  .intro, .workspace, .results-head, .annotated-wrap, .compare-head, .compare-upload-grid, .comparison-images, .comparison-summary { grid-template-columns:1fr; }
+  .intro, .workspace, .results-head, .annotated-wrap, .paired-upload-grid, .identification-images, .identification-heading, .selected-muscle-detail { grid-template-columns:1fr; }
   h1, .lede { grid-column:1; }
-  .compare-head h1, .compare-head > p:last-child, .comparison-summary h1, .comparison-summary > p:last-child { grid-column:1; }
   .intro { padding:48px 0 36px; }
   .dropzone { min-height:360px; }
   .image-stage { min-height:480px; }
   .observations { border-left:0; border-top:1px solid var(--ink); }
-  .progress-report button { grid-template-columns:36px 1fr; }
-  .status { grid-column:2; justify-self:start; }
+  .identification-heading h2, .identification-heading > p:last-child, .selected-muscle-detail h3, .selected-muscle-detail > p:not(.eyebrow), .selected-muscle-detail > span { grid-column:1; }
+  .muscle-directory { grid-template-columns:1fr 1fr; }
 }
 

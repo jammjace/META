@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class Point(BaseModel):
@@ -16,7 +16,7 @@ class PixelPoint(BaseModel):
 
 
 class Annotation(BaseModel):
-    shape: Literal["polygon"] = "polygon"
+    shape: Literal["polygon", "estimated_area"] = "polygon"
     normalized_points: list[Point] = Field(min_length=3)
     pixel_points: list[PixelPoint] = Field(min_length=3)
     label_anchor: Point
@@ -26,34 +26,10 @@ class Annotation(BaseModel):
 class MuscleRegion(BaseModel):
     name: str
     display_name: str
-    group: Literal["trapezius", "latissimus", "rhomboids", "deltoids"]
+    group: Literal["chest", "shoulders", "arms", "back", "core", "obliques", "spine"]
     side: Literal["left", "right", "centre"]
     visible: bool = True
     annotation: Annotation
-
-
-class ModelObservation(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    muscle_name: str
-    observation: str = Field(min_length=1, max_length=240)
-    visible: bool
-
-    @field_validator("observation")
-    @classmethod
-    def single_line(cls, value: str) -> str:
-        return " ".join(value.split())
-
-
-class ModelAnalysis(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-    view: Literal["back", "front", "uncertain"]
-    observations: list[ModelObservation]
-
-
-class MuscleResult(MuscleRegion):
-    observation: str
 
 
 class ImageInfo(BaseModel):
@@ -62,48 +38,65 @@ class ImageInfo(BaseModel):
     url: str
 
 
-class AnalysisResult(BaseModel):
-    analysis_id: str
-    status: Literal["complete"] = "complete"
-    image: ImageInfo
-    view: Literal["back", "front", "uncertain"]
-    muscles: list[MuscleResult]
-    warnings: list[str]
-    model: dict[str, str]
-
-
-class MuscleProgress(BaseModel):
+class GroundingPoint(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    muscle: str
-    status: Literal["visible_progress", "no_clear_change", "inconclusive"]
+    x: int = Field(ge=0, le=1000)
+    y: int = Field(ge=0, le=1000)
+
+
+class GroundingBox(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    x_min: int = Field(ge=0, le=1000)
+    y_min: int = Field(ge=0, le=1000)
+    x_max: int = Field(ge=0, le=1000)
+    y_max: int = Field(ge=0, le=1000)
+
+
+class IdentifiedMuscle(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    muscle_name: str
+    view: Literal["front", "back"]
+    location_quality: Literal[
+        "visible_surface", "covered_surface", "estimated_deep", "not_meaningfully_locatable"
+    ]
     observation: str = Field(min_length=1, max_length=300)
-    limitation: str | None = Field(max_length=240)
+    grounding_point: GroundingPoint | None
+    grounding_box: GroundingBox | None
+    boundary_points: list[GroundingPoint] = Field(max_length=8)
 
 
-class ComparisonModelAnalysis(BaseModel):
+class IdentificationModelResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    baseline_view: Literal["back", "front", "uncertain"]
-    current_view: Literal["back", "front", "uncertain"]
-    overall_summary: str = Field(min_length=1, max_length=500)
-    muscle_progress: list[MuscleProgress]
-    comparison_warnings: list[str]
+    front_view: Literal["front", "back", "uncertain"]
+    back_view: Literal["front", "back", "uncertain"]
+    muscles: list[IdentifiedMuscle]
+    warnings: list[str]
 
 
-class ComparisonSide(BaseModel):
+class IdentifiedMuscleResult(MuscleRegion):
+    location_quality: Literal["visible_surface", "covered_surface", "estimated_deep"]
+    observation: str
+    template_annotation: Annotation
+    grounding_point: GroundingPoint | None
+    grounding_box: GroundingBox | None
+    boundary_points: list[GroundingPoint]
+
+
+class IdentificationSide(BaseModel):
     image: ImageInfo
-    view: Literal["back", "front", "uncertain"]
-    annotations: list[MuscleRegion]
+    view: Literal["front", "back"]
+    muscles: list[IdentifiedMuscleResult]
 
 
-class ComparisonResult(BaseModel):
-    comparison_id: str
+class IdentificationResult(BaseModel):
+    identification_id: str
     status: Literal["complete"] = "complete"
-    baseline: ComparisonSide
-    current: ComparisonSide
-    overall_summary: str
-    muscle_progress: list[MuscleProgress]
-    comparison_warnings: list[str]
+    front: IdentificationSide
+    back: IdentificationSide
+    warnings: list[str]
     model: dict[str, str]
 

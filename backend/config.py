@@ -20,11 +20,13 @@ class Settings:
     model_api_model: str
     meta_api_timeout_seconds: float
     meta_api_total_limit: int
+    debug_artifact_dir: Path | None = None
 
     @classmethod
     def from_env(cls) -> "Settings":
         root = Path(__file__).resolve().parent
         storage = Path(os.getenv("STORAGE_DIR", root / "storage")).resolve()
+        debug_value = os.getenv("ANNOTATION_DEBUG_DIR", "").strip()
         return cls(
             storage_dir=storage,
             cors_origins=tuple(
@@ -41,6 +43,7 @@ class Settings:
             model_api_model=os.getenv("MODEL_API_MODEL", "muse-spark-1.3").strip(),
             meta_api_timeout_seconds=float(os.getenv("META_API_TIMEOUT_SECONDS", "60")),
             meta_api_total_limit=int(os.getenv("META_API_TOTAL_LIMIT", "1")),
+            debug_artifact_dir=Path(debug_value).resolve() if debug_value else None,
         )
 
     def validate_meta(self) -> None:

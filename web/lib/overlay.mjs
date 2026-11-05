@@ -1,8 +1,11 @@
 export const MUSCLE_STYLES = Object.freeze({
-  trapezius: { fill: "#ef765f", stroke: "#8f3528" },
-  latissimus: { fill: "#e4c94f", stroke: "#82701d" },
-  rhomboids: { fill: "#58bddd", stroke: "#246d85" },
-  deltoids: { fill: "#9a7bd5", stroke: "#55407e" },
+  chest: { fill: "#ef765f", stroke: "#8f3528" },
+  shoulders: { fill: "#9a7bd5", stroke: "#55407e" },
+  arms: { fill: "#f2a64a", stroke: "#8b5620" },
+  back: { fill: "#58bddd", stroke: "#246d85" },
+  core: { fill: "#71bf78", stroke: "#326b3a" },
+  obliques: { fill: "#e7bf4f", stroke: "#80651e" },
+  spine: { fill: "#ee9b58", stroke: "#8a4e23" },
 });
 
 export function muscleStyle(group) {

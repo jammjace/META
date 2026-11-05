@@ -1,0 +1,28 @@
+{
+  "description": "Manually reviewed normalized anchors for a synthetic upright pose; values are independent of annotation_builder output.",
+  "front": {
+    "left_pectoralis_major": [0.60, 0.34],
+    "right_pectoralis_major": [0.40, 0.34],
+    "left_anterior_deltoid": [0.72, 0.28],
+    "right_anterior_deltoid": [0.28, 0.28],
+    "left_lateral_deltoid": [0.75, 0.32],
+    "right_lateral_deltoid": [0.25, 0.32],
+    "left_biceps_brachii": [0.76, 0.45],
+    "right_biceps_brachii": [0.24, 0.45],
+    "left_external_oblique": [0.61, 0.60],
+    "right_external_oblique": [0.39, 0.60],
+    "rectus_abdominis": [0.50, 0.56]
+  },
+  "back": {
+    "trapezius": [0.50, 0.35],
+    "left_rhomboid": [0.43, 0.43],
+    "right_rhomboid": [0.57, 0.43],
+    "left_latissimus_dorsi": [0.38, 0.57],
+    "right_latissimus_dorsi": [0.62, 0.57],
+    "left_posterior_deltoid": [0.28, 0.29],
+    "right_posterior_deltoid": [0.72, 0.29],
+    "left_triceps_brachii": [0.23, 0.46],
+    "right_triceps_brachii": [0.77, 0.46],
+    "erector_spinae": [0.50, 0.72]
+  }
+}

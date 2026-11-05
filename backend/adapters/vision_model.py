@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from models import ComparisonModelAnalysis, ModelAnalysis, MuscleRegion
+from models import IdentificationModelResult, MuscleRegion
 
 
 class VisionModel(Protocol):
@@ -10,13 +10,11 @@ class VisionModel(Protocol):
 
     def preflight(self) -> None: ...
 
-    def analyze(self, image_jpeg: bytes, regions: list[MuscleRegion]) -> tuple[ModelAnalysis, dict]: ...
-
-    def compare(
+    def identify_pair(
         self,
-        baseline_jpeg: bytes,
-        current_jpeg: bytes,
-        regions: list[MuscleRegion],
-        compatibility_notes: list[str],
-    ) -> tuple[ComparisonModelAnalysis, dict]: ...
+        front_jpeg: bytes,
+        back_jpeg: bytes,
+        front_regions: list[MuscleRegion],
+        back_regions: list[MuscleRegion],
+    ) -> tuple[IdentificationModelResult, dict]: ...
 

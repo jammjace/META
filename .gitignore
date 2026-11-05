@@ -5,6 +5,7 @@ __pycache__/
 backend/storage/
 web/node_modules/
 web/.next/
+*.tsbuildinfo
 
 .env.example
 
